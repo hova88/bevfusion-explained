@@ -1,0 +1,1 @@
+{"token":"bad8a002637046178fe0f8216e5bc355","tensor_shape":[5,32,2048],"occupied_bins":28800,"total_bins":65536,"occupancy_ratio":0.4395,"source_note":"Same-token standardized 5D LiDAR range tensor from nuScenes-QA-mini; rendered as occupancy only."}

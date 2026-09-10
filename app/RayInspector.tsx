@@ -1,0 +1,18 @@
+import {cameraBevCell,liftPixel,projectPoint,type SensorCamera} from './sensors';
+import {DEPTH_BINS,depthProbabilities} from './geometry';
+
+export default function RayInspector({camera,point,mode,depth,setDepth,yaw,setYaw}:{camera:SensorCamera;point:number[];mode:'lift'|'align';depth:number;setDepth:(n:number)=>void;yaw:number;setYaw:(n:number)=>void}) {
+  const measured=projectPoint(camera,point),valid=measured.visible;
+  const p=liftPixel(camera,measured.u,measured.v,mode==='lift'?depth:measured.depth,mode==='align'?yaw:0);
+  const cell=cameraBevCell(p),error=Math.hypot(...p.map((v,i)=>v-point[i]));
+  const probs=depthProbabilities(),max=Math.max(...probs),value=mode==='lift'?depth:yaw;
+  return <section className="ray-inspector" aria-label="Calibrated ray experiment"><b>{mode==='lift'?'LIFT THROUGH REAL CALIBRATION':'PERTURB THE REAL CAMERA ORIENTATION'}</b>
+    {!valid&&<p role="status">This return is outside the selected camera. Select a visible return in the image to inspect its ray.</p>}
+    {mode==='lift'&&<><div className="depth-chart" aria-label="118 teaching probabilities, not checkpoint predictions">{DEPTH_BINS.map((d,i)=><i key={d} className={d===depth?'active':''} title={`${d} m: ${(100*probs[i]).toFixed(2)}%`} style={{height:`${Math.max(1,probs[i]/max*100)}%`}}/>)}</div><p className="ray-disclaimer">Fixed normalized teaching distribution. Calibration and measured depth are real; these probabilities are not model predictions.</p></>}
+    <label>{mode==='lift'?'Selected optical depth':'Injected yaw about LiDAR +Z'}<strong>{value.toFixed(1)}{mode==='lift'?' m':'°'}</strong><div className="range-control"><button disabled={!valid||value<=(mode==='lift'?1:-8)} aria-label={mode==='lift'?'Decrease calibrated depth':'Decrease calibrated yaw'} onClick={()=>mode==='lift'?setDepth(Math.max(1,depth-.5)):setYaw(Math.max(-8,yaw-.5))}>−</button><input disabled={!valid} aria-label={mode==='lift'?'Calibrated depth hypothesis':'Calibrated yaw error'} type="range" min={mode==='lift'?1:-8} max={mode==='lift'?59.5:8} step=".5" value={value} onChange={e=>mode==='lift'?setDepth(+e.target.value):setYaw(+e.target.value)}/><button disabled={!valid||value>=(mode==='lift'?59.5:8)} aria-label={mode==='lift'?'Increase calibrated depth':'Increase calibrated yaw'} onClick={()=>mode==='lift'?setDepth(Math.min(59.5,depth+.5)):setYaw(Math.min(8,yaw+.5))}>+</button></div></label>
+    <button className="ray-reset" disabled={!valid} onClick={()=>mode==='lift'?setDepth(Math.max(1,Math.min(59.5,Math.round(measured.depth*2)/2))):setYaw(0)}>{mode==='lift'?'Select nearest measured-depth bin':'Restore calibration'}</button>
+    <dl><div><dt>measured optical depth</dt><dd>{valid?measured.depth.toFixed(3)+' m':'—'}</dd></div><div><dt>lifted LiDAR xyz</dt><dd>{valid?p.map(v=>v.toFixed(2)).join(', '):'—'}</dd></div><div><dt>raw 0.3 m pool cell</dt><dd>{valid?(cell?`[${cell.join(', ')}]`:'Rejected: outside bounds'):'—'}</dd></div><div><dt>distance from return</dt><dd>{valid?error.toFixed(3)+' m':'—'}</dd></div>{mode==='lift'&&<div><dt>teaching probability</dt><dd>{(100*probs[Math.round((depth-1)*2)]).toFixed(2)}%</dd></div>}</dl>
+    <p>{mode==='lift'?'The orange point is one depth hypothesis on this measured pixel’s ray. The blue ring stays at the measured return. Matching optical depth recovers that return; selecting the nearest 0.5 m bin leaves a small quantization error.':'Depth is fixed to the measured value, so displacement isolates calibration error. The camera center stays fixed while its ray rotates. Restoring 0° recovers the measured point up to calibration rounding.'}</p>
+    <code>p_L = T_C→L · [d K⁻¹(u, v, 1), 1]</code>
+  </section>;
+}
