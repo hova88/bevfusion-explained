@@ -1,5 +1,13 @@
 # Completion audit — 2026-09-10
 
+## Camera-to-BEV expansion — 2026-09-13
+
+- Added four deep-dive panels based on the supplied detailed LSS/pooling explanation, checked against official LSS, DepthLSS, BaseTransform, pooling wrapper, CUDA kernel and segmentation configuration sources.
+- Outer-product values conserve signed context; softmax-logit gradients match finite differences. Batch-aware sorting rejects the invalid record and prevents cross-batch sums. Memory estimates distinguish points, scalars and storage bytes.
+- Explicitly separate geometric addresses from grouping ranks and CUDA offsets, strict metric bounds from truncation behavior, and the segmentation LSSTransform contract from the detection DepthLSSTransform contract.
+- Mobile and desktop browser checks cover all four panels, probability edits, calibrated address selection, precision changes, sorting, batch splitting, backward gradients, height concatenation, cache invalidation and configuration comparison. No overflow or page errors observed at 390 and 1440 px.
+- Existing eight-stage real-sensor workbench remains intact; the additional lab shares its selected return and camera. No new checkpoint or latency claims.
+
 The implementation and local acceptance review are complete. Publication is tracked separately; earlier publication alone is not evidence of correctness.
 
 ## Verified in this revision

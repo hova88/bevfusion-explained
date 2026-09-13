@@ -4,6 +4,17 @@
 
 An all-English, interactive dissection of MIT Han Lab's BEVFusion. Trace one real nuScenes packet—six cameras and 34,688 LiDAR returns—through eight stages: Frame, Image, Lift, Pool, LiDAR, Align, Fuse and Head.
 
+## Inside camera → BEV
+
+The deeper laboratory adds four connected studies:
+
+1. Edit depth logits and inspect the signed outer product, with addresses from the shared real calibrated ray and a configurable lifted-tensor memory estimate.
+2. Follow record IDs through a shared mask and sort, isolate batches, compare prefix sums with interval reduction, and distinguish grouping rank from CUDA output offset.
+3. Trace pooling gradients through softmax and context multiplication, then inspect height-to-channel concatenation.
+4. Check geometry-cache invalidation conditions and compare the official detection and segmentation grid contracts without mixing configurations.
+
+Finite-difference tests check the logit gradients. The experiments are computed teaching examples, not GPU benchmarks or model activations.
+
 ## What is real, and what is illustrative?
 
 - The images, LiDAR sweep, calibration and timestamps are real. Pixel projection, inverse augmentation, lifting, voxel membership and calibration perturbations are computed from those data.
