@@ -7,8 +7,8 @@ try {
  for(const width of [390,1440]) {
   const page=await browser.newPage({viewport:{width,height:900}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('http://localhost:3000/',{waitUntil:'networkidle'});
-  const stage=async i=>{await page.locator('.stage-nav button').nth(i).click();};
+  await page.goto(process.env.AUDIT_URL||'http://localhost:3000/',{waitUntil:'networkidle'});
+  const stage=async i=>{if(width<=760)await page.locator('.mobile-chapters').click();await page.locator('.lesson-nav button').nth([0,1,2,4,7,8,10,11][i]).click();};
   const text=selector=>page.locator(selector).innerText();
   await page.getByLabel('Real LiDAR cloud.',{exact:false}).press('ArrowRight');
   assert.match(await text('.sensor-record summary'),/#8565/);

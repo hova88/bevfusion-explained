@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { POOL_RANKS, POOL_VALUES, poolRank, CAMERA_FIELD, LIDAR_FIELD, CAMERA_KERNEL, LIDAR_KERNEL, fusionAt } from './operators';
 import RealScene from './RealScene';
 import ImageBranch from './ImageBranch';
 import DetectionLab from './DetectionLab';
 import TheoryNotes from './TheoryNotes';
 import CameraBEVLab from './CameraBEVLab';
+import {LESSONS,lessonFromHash} from './lessons';
+import './journey.css';
 
 type Modality = 'camera' | 'lidar' | 'fusion';
 type Stage = {
@@ -60,7 +62,7 @@ function FusionField({ modality, setModality }: { modality: Modality; setModalit
 }
 
 function HeadStage() {
-  return <div className="head-stage"><figure><img src={(process.env.NEXT_PUBLIC_BASE_PATH || '')+'/bevfusion-demo.gif'} alt="Official BEVFusion repository demo showing six cameras, LiDAR boxes, and BEV map output" /><figcaption><span>6 CAMERAS</span><span>LIDAR + 3D BOXES</span><span>BEV MAP</span></figcaption></figure><aside className="operator-panel"><b>OFFICIAL REPOSITORY REEL</b><dl><div><dt>left</dt><dd>camera ring</dd></div><div><dt>center</dt><dd>LiDAR + boxes</dd></div><div><dt>right</dt><dd>semantic map</dd></div></dl><p>This supplied demo is a different sequence, not an inference result for the sample above. The browser does not run a BEVFusion checkpoint.</p></aside></div>;
+  return <div className="head-stage"><figure><img src={(process.env.NEXT_PUBLIC_BASE_PATH || '')+'/bevfusion-demo.gif'} alt="Official BEVFusion repository demo showing six cameras, LiDAR boxes, and BEV map output" /><figcaption><span>6 CAMERAS</span><span>LIDAR + 3D BOXES</span><span>BEV MAP</span></figcaption></figure><aside className="operator-panel"><b>OFFICIAL REPOSITORY REEL</b><dl><div><dt>left</dt><dd>camera ring</dd></div><div><dt>center</dt><dd>LiDAR + boxes</dd></div><div><dt>right</dt><dd>semantic map</dd></div></dl><p>This supplied demo is a different sequence, not an inference result for the inspected sensor packet. The browser does not run a BEVFusion checkpoint.</p></aside></div>;
 }
 
 function StageSurface(props: { point:number; setPoint:(n:number)=>void; stage: number; selected: string; setSelected:(s:string)=>void; depth:number; setDepth:(n:number)=>void; rank:number; setRank:(n:number)=>void; yaw:number; setYaw:(n:number)=>void; modality:Modality; setModality:(m:Modality)=>void }) {
@@ -75,41 +77,59 @@ function StageSurface(props: { point:number; setPoint:(n:number)=>void; stage: n
   return <><DetectionLab/><HeadStage/></>;
 }
 
-export default function Home() {
-  const [point,setPoint]=useState(8564), [stage,setStage]=useState(0), [selected,setSelected]=useState('front');
-  const [depth,setDepth]=useState(24);
-  const [rank,setRank]=useState(7), [yaw,setYaw]=useState(0), [modality,setModality]=useState<Modality>('fusion');
-  const s=stages[stage];
-  const firstStage=useRef(true);
-  useEffect(()=>{if(firstStage.current){firstStage.current=false;return;}const frame=requestAnimationFrame(()=>{document.querySelector('.stage-heading')?.scrollIntoView({block:'start',behavior:'instant'});document.querySelector('.stage-nav button.active')?.scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});});return()=>cancelAnimationFrame(frame)},[stage]);
-  useEffect(()=>{const f=(e:KeyboardEvent)=>{const target=e.target as HTMLElement|null;if(target?.closest('input, select, textarea, summary, button, a, [contenteditable="true"]'))return;if(e.key==='ArrowRight')setStage(v=>Math.min(7,v+1));if(e.key==='ArrowLeft')setStage(v=>Math.max(0,v-1));};addEventListener('keydown',f);return()=>removeEventListener('keydown',f)},[]);
-
-  return <main id="top">
-    <header className="site-header"><a href="#top" className="wordmark">BEVFusion <span>/ field guide</span></a><div className="header-meta"><span>nuScenes · {TOKEN.slice(0,8)}</span><a href="#review">THEORY REVIEW ↓</a></div></header>
-
-
-
-
-
-    <section className="workbench" id="workbench"><div className="section-intro"><span>BEVFUSION / AN OPERATOR FIELD GUIDE</span><p>Real nuScenes inputs. Inspectable teaching computations. Follow the evidence from perspective to bird’s-eye view.</p></div>
-      <div className="bench-shell">
-        <nav className="stage-nav" aria-label="BEVFusion operators">{stages.map((x,i)=><button key={x.n} className={stage===i?'active':''} onClick={()=>setStage(i)} aria-current={stage===i?'step':undefined}><i>{x.n}</i><span>{x.label}</span><b>{x.verb}</b></button>)}</nav>
-        <article className="stage-story" key={stage}><div className="stage-heading"><span>{s.n} / {s.verb}</span><h3>{s.question}</h3><div><p>{s.answer.split('. ')[0]}.</p><details className="stage-rationale"><summary>Mechanism & assumptions</summary><p>{s.answer}</p><small>ASSUMPTION · {s.assumption}</small></details></div></div>
-          <StageSurface point={point} setPoint={setPoint} stage={stage} selected={selected} setSelected={setSelected} depth={depth} setDepth={setDepth} rank={rank} setRank={setRank} yaw={yaw} setYaw={setYaw} modality={modality} setModality={setModality}/>
-          <TensorContract stage={s}/>
-          {(stage===2||stage===3)&&<a className="deep-entry" href="#camera-deep">Go deeper: outer products, memory, interval reduction and gradients ↓</a>}
-        </article>
-      </div>
-    </section>
-
-    <CameraBEVLab point={point} selected={selected}/>
-
-    <section className="review" id="review"><div className="review-title"><span>THEORY REVIEW</span><h2>What BEVFusion<br/>actually contributes.</h2><p>The novelty is not a mystical fusion block. It is a disciplined systems boundary: an optimized camera-to-BEV transform plus a task-agnostic shared-metric interface where mature encoders can meet.</p></div>
+function ReviewChapter(){return (<section className="review" id="review">
       <div className="review-grid"><article><i>01</i><h3>Dense semantics</h3><p>Point-level fusion throws away most image evidence because only projected LiDAR locations are sampled. BEV-level fusion keeps camera semantics dense across the ground plane.</p></article><article><i>02</i><h3>Efficient lifting</h3><p>The paper reports more than 40× lower BEV-pooling latency through precomputed indexing and interval reduction. Do not confuse this systems result with BEVPoolv2: this repository’s DepthLSS code still explicitly forms depth-weighted features.</p></article><article><i>03</i><h3>Clean interface</h3><p>Camera and LiDAR encoders can evolve independently as long as their outputs address the same metric coordinate frame and grid. The BEV becomes a practical software contract.</p></article><article><i>04</i><h3>Real limits</h3><p>Depth smearing, calibration drift, temporal misalignment, memory cost, weather-corrupted sensors, and negative transfer between tasks remain unsolved engineering risks.</p></article></div>
       <TheoryNotes/><div className="metrics"><span>nuScenes validation · official repository</span><div><small>CAMERA</small><b>35.56</b><i>mAP</i></div><em>→</em><div><small>LIDAR</small><b>64.68</b><i>mAP</i></div><em>→</em><div className="accent"><small>FUSION</small><b>68.52</b><i>mAP · 71.38 NDS</i></div></div>
       <p className="evidence-policy"><b>Evidence policy.</b> The Frame and LiDAR stages use six original nuScenes images, 34,688 metric returns, and supplied calibration for one sample. Lift and Align use the same sensor packet and calibrated ray, with a shared selected return across stages. Depth probabilities, pooling values and fusion weights are transparent teaching tensors, not checkpoint activations. The official demo is a different sequence. Sensor provenance and hashes are available with the data.</p>
-    </section>
+    </section>);}
 
-    <footer><div><b>BEVFusion / field guide</b><span>Independent visual explanation · non-commercial educational use.</span></div><nav><a href="https://arxiv.org/abs/2205.13542" target="_blank" rel="noreferrer">PAPER ↗</a><a href="https://github.com/mit-han-lab/bevfusion" target="_blank" rel="noreferrer">CODE ↗</a><a href="https://www.nuscenes.org/" target="_blank" rel="noreferrer">DATA ↗</a></nav></footer>
+export default function Home() {
+  const [point,setPoint]=useState(8564),[selected,setSelected]=useState('front');
+  const [step,setStep]=useState(0),[menuOpen,setMenuOpen]=useState(false);
+  const [depth,setDepth]=useState(24),[rank,setRank]=useState(7),[yaw,setYaw]=useState(0),[modality,setModality]=useState<Modality>('fusion');
+  const lesson=LESSONS[step],stage=lesson.stage??0,s=stages[stage];
+  const firstStep=useRef(true);
+  function go(index:number){
+    const next=Math.max(0,Math.min(LESSONS.length-1,index));
+    if(next===step){setMenuOpen(false);return;}
+    history.pushState(null,'','#'+LESSONS[next].id);
+    setStep(next);setMenuOpen(false);
+  }
+  useEffect(()=>{
+    const restore=()=>{setStep(lessonFromHash(location.hash));setMenuOpen(false)};
+    restore();addEventListener('popstate',restore);addEventListener('hashchange',restore);
+    return()=>{removeEventListener('popstate',restore);removeEventListener('hashchange',restore)};
+  },[]);
+  useLayoutEffect(()=>{
+    if(firstStep.current){firstStep.current=false;return;}
+    const heading=document.getElementById('lesson-title');
+    heading?.focus({preventScroll:true});
+    document.getElementById('lesson-start')?.scrollIntoView({block:'start',behavior:'instant'});
+  },[step]);
+  return <main id="top" className="guided-page">
+    <header className="site-header"><a href="#frame" className="wordmark" onClick={e=>{e.preventDefault();go(0)}}>BEVFusion <span>/ field guide</span></a><div className="journey-position"><span>ONE FRAME → SHARED BEV</span><b>{String(step+1).padStart(2,'0')} / {LESSONS.length}</b></div></header>
+    <div className="journey-shell">
+      <aside className={'lesson-sidebar'+(menuOpen?' menu-open':'')}>
+        <button className="mobile-chapters" aria-expanded={menuOpen} aria-controls="lesson-navigation" onClick={()=>setMenuOpen(v=>!v)}>Chapters <span>{String(step+1).padStart(2,'0')} / {LESSONS.length} {menuOpen?'−':'+'}</span></button>
+        <nav className="lesson-nav" id="lesson-navigation" aria-label="Learning chapters">
+          <p className="journey-intro">A guided dissection.<br/>One question at a time.</p>
+          {LESSONS.map((l,i)=><div key={l.id}>{(i===0||LESSONS[i-1].group!==l.group)&&<h2>{l.group}</h2>}<button aria-current={step===i?'step':undefined} onClick={()=>go(i)}><span>{String(i+1).padStart(2,'0')}</span>{l.title}</button></div>)}
+          <p className="journey-evidence">Real sensor geometry.<br/>Disclosed teaching tensors.<br/>No checkpoint runs here.</p>
+        </nav>
+      </aside>
+      <article className="lesson-article">
+        <header className="lesson-heading" id="lesson-start"><p className="lesson-kicker">{lesson.group} <span>STEP {String(step+1).padStart(2,'0')}</span></p><h1 id="lesson-title" tabIndex={-1}>{lesson.question}</h1><p className="lesson-bridge">{lesson.bridge}</p></header>
+        <div className="lesson-guide"><div><b>TRY THIS</b><p>{lesson.try}</p></div><div><b>LOOK FOR</b><p>{lesson.notice}</p></div></div>
+        <div className="lesson-experiment">
+          {lesson.stage!==undefined&&<StageSurface key={lesson.stage} point={point} setPoint={setPoint} stage={stage} selected={selected} setSelected={setSelected} depth={depth} setDepth={setDepth} rank={rank} setRank={setRank} yaw={yaw} setYaw={setYaw} modality={modality} setModality={setModality}/>}
+          <div hidden={lesson.deep===undefined}><CameraBEVLab point={point} selected={selected} chapter={lesson.deep??0}/></div>
+          {step===LESSONS.length-1&&<ReviewChapter/>}
+        </div>
+        {lesson.stage!==undefined&&<><details className="lesson-mechanism"><summary>Why this works · implementation & assumptions</summary><p>{s.answer}</p><p>{s.assumption}</p></details><TensorContract stage={s}/></>}
+        <section className="lesson-takeaway"><small>TAKE THIS WITH YOU</small><p>{lesson.takeaway}</p></section>
+        <nav className="lesson-pagination" aria-label="Continue the explanation"><button disabled={step===0} onClick={()=>go(step-1)} className="lesson-back">← Previous</button>{step<LESSONS.length-1?<button className="lesson-next" onClick={()=>go(step+1)}><small>NEXT / {String(step+2).padStart(2,'0')}</small><span>{LESSONS[step+1].title} →</span></button>:<button className="lesson-next" onClick={()=>go(0)}><small>RETURN TO THE EVIDENCE</small><span>Revisit the real frame →</span></button>}</nav>
+      </article>
+    </div>
+    <footer><div><b>BEVFusion / field guide</b><span>Independent visual explanation · non-commercial educational use.</span></div><nav><a href="https://arxiv.org/abs/2205.13542" target="_blank" rel="noreferrer">PAPER ↗</a><a href="https://github.com/hova88/bevfusion-explained" target="_blank" rel="noreferrer">GUIDE SOURCE ↗</a><a href="https://github.com/mit-han-lab/bevfusion" target="_blank" rel="noreferrer">MODEL CODE ↗</a></nav></footer>
   </main>;
 }

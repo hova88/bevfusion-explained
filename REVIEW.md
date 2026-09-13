@@ -1,5 +1,14 @@
 # Completion audit — 2026-09-10
 
+## Guided reading redesign — 2026-09-13
+
+- Replaced the three disconnected vertical surfaces with one 13-chapter reader: introduction to the sensor packet, six camera chapters, four shared-representation chapters, output decoding and final synthesis.
+- Every chapter has a question, bridge from prior knowledge, Try This, Look For, existing computed experiment, takeaway and Previous/Next navigation. The four deeper studies are embedded in the appropriate learning sequence rather than duplicated underneath it.
+- Desktop contents remain alongside the current chapter; mobile contents are collapsible and sticky. URL fragments support direct entry, browser history restores reading position, and the legacy camera-deep fragment maps to the outer-product chapter.
+- Deep experiment state survives chapter changes. Shared raw-return, camera, calibrated depth/yaw and fusion-mode state stay connected. Removed global left/right chapter shortcuts so control interactions cannot accidentally change the lesson.
+- Browser acceptance covers all 13 chapters at 320, 390, 768 and 1440 px: one reading surface, no horizontal overflow or obscured heading, Next/Previous, mobile menu, history, reload, legacy fragment and persistent deep state. Existing sensor/operator and deeper-interaction audits were adapted to the chapter navigation.
+- Corrected delayed chapter-focus behavior that could steal focus from a slider immediately after navigation; heading focus and scroll now occur together at layout commit.
+
 ## Camera-to-BEV expansion — 2026-09-13
 
 - Added four deep-dive panels based on the supplied detailed LSS/pooling explanation, checked against official LSS, DepthLSS, BaseTransform, pooling wrapper, CUDA kernel and segmentation configuration sources.

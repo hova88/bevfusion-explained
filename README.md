@@ -2,11 +2,17 @@
 
 [Read the interactive article](https://hova88.github.io/bevfusion-explained/) · [Vis collection](https://hova88.github.io/vis/)
 
-An all-English, interactive dissection of MIT Han Lab's BEVFusion. Trace one real nuScenes packet—six cameras and 34,688 LiDAR returns—through eight stages: Frame, Image, Lift, Pool, LiDAR, Align, Fuse and Head.
+An all-English, interactive dissection of MIT Han Lab's BEVFusion. Trace one real nuScenes packet—six cameras and 34,688 LiDAR returns—through 13 guided chapters covering the eight core operators and their deeper mechanics.
+
+## Read as one connected argument
+
+Each chapter introduces one question, suggests an experiment, tells you what to observe, and closes with a takeaway and a motivated next step. The chapter navigation supports direct jumps; Previous/Next, URL fragments and browser history preserve a coherent reading position. A compact mobile chapter menu remains reachable while reading.
+
+The outer product follows calibrated lifting; sorting and gradients follow pooling; cache contracts follow alignment; theory synthesis closes the journey. These are no longer three separate vertical sections. Selected sensor evidence and the deeper experiment state carry across relevant chapters. The old `#camera-deep` link opens the distribution chapter.
 
 ## Inside camera → BEV
 
-The deeper laboratory adds four connected studies:
+Four detailed studies are woven into the chapter sequence:
 
 1. Edit depth logits and inspect the signed outer product, with addresses from the shared real calibrated ray and a configurable lifted-tensor memory estimate.
 2. Follow record IDs through a shared mask and sort, isolate batches, compare prefix sums with interval reduction, and distinguish grouping rank from CUDA output offset.
